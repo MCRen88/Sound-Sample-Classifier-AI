@@ -57,10 +57,7 @@ class Data:
 
     def parse_data(self, bytesPerSample, dataString):
         def convertBinaryStringToInt(bString): # For little endian format
-            val = 0
-            for i in range(len(bString)):
-                val += bString[i] * 16 ** i
-            return val
+            return int.from_bytes(bString, byteorder="little", signed=False)
 
         data = ([], []) # left channel data, right channel data
         pos = 8
