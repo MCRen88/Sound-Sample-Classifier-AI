@@ -1,7 +1,10 @@
+#########################
+# Add unit tests here   #
+#########################
+
 from util import *
 import sys
 import inspect
-
 
 def test_header_group(wav_objects): # Test Header consistency
     for wav_object in wav_objects:
@@ -71,7 +74,7 @@ def test_data_3(wav_object): # Specific sample tests via reading data from hex-v
         assert wav_object.data.frames[1][0] == 2
 
         assert wav_object.data.frames[0][1] == 1
-        assert wav_object.data.frames[1][1] == 65535
+        assert wav_object.data.frames[1][1] == -1
 
         assert wav_object.data.frames[0][2] == 1
         assert wav_object.data.frames[1][2] == 2

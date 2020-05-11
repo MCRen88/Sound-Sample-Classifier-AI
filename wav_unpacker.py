@@ -1,3 +1,7 @@
+#############################################################################
+# Module containing bjects to import and parse information from .wav files  #
+#############################################################################
+
 import struct as st
 
 class Header:
@@ -57,10 +61,10 @@ class Data:
 
     def parse_data(self, bytesPerSample, dataString):
         def convertBinaryStringToInt(bString): # For little endian format
-            return int.from_bytes(bString, byteorder="little", signed=False)
+            return int.from_bytes(bString, byteorder="little", signed=True)
 
         data = ([], []) # left channel data, right channel data
-        pos = 8
+        pos = 8     # offset from begining of data string
         channel = 0 # start with left
 
         while pos < self.subChunk2Size:
