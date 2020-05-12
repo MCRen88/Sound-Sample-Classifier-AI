@@ -21,3 +21,7 @@ wav_obj_2 = WaveObject(test_file_2)
 wav_obj_3 = WaveObject(test_file_3)
 
 test_group_1 = (wav_obj_1, wav_obj_2, wav_obj_3) # Group of valid wave files for testing
+
+wav_obj_1_normalized = WaveObject(test_file_1, normalize=True, normLevel=1)
+wav_obj_2_normalized = WaveObject(test_file_2, normalize=True, normLevel=1)
+wav_obj_3_normalized = WaveObject(test_file_3, normalize=True, normLevel=1)

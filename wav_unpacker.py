@@ -6,17 +6,17 @@ import struct as st
 
 class Header:
     def __init__(self, contentString):
-        self.validFlag = None
-        self.chunkID = contentString[0:4].decode('ascii') # Should read 'RIFF'
-        self.chunkSize = st.unpack('<L', contentString[4:8])[0] # Gives file size - 8 (in bytes)
-        self.format = contentString[8:12].decode('ascii') # Should read 'WAVE'
-        self.subChunk1ID = contentString[12:16].decode('ascii') # Should be 'fmt '
+        self.validFlag     = True
+        self.chunkID       = contentString[0:4].decode('ascii') # Should read 'RIFF'
+        self.chunkSize     = st.unpack('<L', contentString[4:8])[0] # Gives file size - 8 (in bytes)
+        self.format        = contentString[8:12].decode('ascii') # Should read 'WAVE'
+        self.subChunk1ID   = contentString[12:16].decode('ascii') # Should be 'fmt '
         self.subChunk1Size = st.unpack('<L', contentString[16:20])[0] # Gives remainder size of the subchunk
-        self.audioFormat = st.unpack('<H', contentString[20:22])[0] # 1 for PCM, NOTE: only handle these for now
-        self.numChannels = st.unpack('<H', contentString[22:24])[0] # 2 for stereo: NOTE: only handle these for now
-        self.sampleRate = st.unpack('<L', contentString[24:28])[0]
-        self.byteRate = st.unpack('<L', contentString[28:32])[0]
-        self.blockAlign = st.unpack('<H', contentString[32:34])[0]
+        self.audioFormat   = st.unpack('<H', contentString[20:22])[0] # 1 for PCM, NOTE: only handle these for now
+        self.numChannels   = st.unpack('<H', contentString[22:24])[0] # 2 for stereo: NOTE: only handle these for now
+        self.sampleRate    = st.unpack('<L', contentString[24:28])[0]
+        self.byteRate      = st.unpack('<L', contentString[28:32])[0]
+        self.blockAlign    = st.unpack('<H', contentString[32:34])[0]
         self.bitsPerSample = st.unpack('<H', contentString[34:36])[0]
 
     def __str__(self):
@@ -46,8 +46,8 @@ class Header:
 
 class Data:
     def __init__(self, dataString, bitsPerSample):
-        self.validFlag = None
-        self.subChunk2ID = dataString[0:4].decode('ascii') # Should read 'data'
+        self.validFlag     = True
+        self.subChunk2ID   = dataString[0:4].decode('ascii') # Should read 'data'
         self.subChunk2Size = st.unpack('<L', dataString[4:8])[0]
 
         bytesPerSample = bitsPerSample / 8
@@ -76,14 +76,25 @@ class Data:
         return data
 
 class WaveObject:
-    def __init__(self, filename):
+    def __init__(self, filename, normalize=False, normLevel=None, compress=False, compLevel=None):
+        self.validFlag = True
         self.filename = filename
         self.header   = None
         self.data     = None
         self.fileSize = None
         self.parse_file()
 
-    def findDataStart(self, fileContent):
+        if self.data.validFlag == False or self.header.validFlag == False:
+            self.validFlag = False
+
+        if self.validFlag:
+            if compress: # compress first to make sure correct normLevel is applied on compressed data
+                self.compress_data(compLevel)
+
+            if normalize:
+                self.normalize_data(normLevel)
+
+    def findDataStart(self, fileContent): # Find beginning of data chunk in case of malformed header
         start = 36
         while start < len(fileContent):
             if (fileContent[start:start+4] == b'data'):
@@ -99,4 +110,25 @@ class WaveObject:
         self.fileSize = len(fileContent)
         self.header = Header(fileContent)
         dataStart = self.findDataStart(fileContent)
+        if dataStart == None:
+            self.validFlag = False
+            return
         self.data = Data(fileContent[dataStart:], self.header.bitsPerSample)
+
+    def normalize_data(self, level):
+        if level is not None:
+            leftData = self.data.frames[0]
+            rightData = self.data.frames[1]
+
+            maxVal = abs(max(max(leftData, key=abs), max(rightData, key=abs), key=abs))
+            multiplier = level / maxVal
+
+            for i in range(len(leftData)):
+                leftData[i] *= multiplier
+
+            for i in range(len(rightData)):
+                rightData[i] *= multiplier
+
+    def compress_data(self, level):
+        if level is not None:
+            return

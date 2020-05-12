@@ -29,6 +29,5 @@ def plot_waveform(wav_obj):
 
     plt.show()
 
-
-
-plot_waveform(wav_obj_1)
+if __name__ == "__main__":
+    plot_waveform(wav_obj_3_normalized)
