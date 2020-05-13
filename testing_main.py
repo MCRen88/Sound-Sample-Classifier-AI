@@ -7,7 +7,7 @@ import unit_tests
 import wave
 from file_manage import *
 
-unit_tests.test_header_group(test_group_1)
+unit_tests.test_group(test_group_1)
 unit_tests.test_data_group(test_group_1)
 
 unit_tests.test_data_1(wav_obj_1)

@@ -6,7 +6,7 @@ from util import *
 import sys
 import inspect
 
-def test_header_group(wav_objects): # Test Header consistency
+def test_group(wav_objects): # Test Header consistency
     for wav_object in wav_objects:
         try:
             assert wav_object.header.chunkID == 'RIFF'
@@ -15,6 +15,7 @@ def test_header_group(wav_objects): # Test Header consistency
             assert wav_object.header.subChunk1ID == 'fmt '
             assert wav_object.header.byteRate == wav_object.header.sampleRate * wav_object.header.numChannels * wav_object.header.bitsPerSample / 8
             assert wav_object.header.blockAlign == wav_object.header.numChannels * wav_object.header.bitsPerSample / 8
+            assert wav_object.validFlag == True
 
         except AssertionError:
             print(str_red("Test [{}] Failed on line {}").format(inspect.stack()[0][3], sys.exc_info()[-1].tb_lineno))

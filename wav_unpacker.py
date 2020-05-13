@@ -8,7 +8,7 @@ class Header:
     def __init__(self, contentString):
         self.validFlag     = True
         self.chunkID       = contentString[0:4].decode('ascii') # Should read 'RIFF'
-        self.chunkSize     = st.unpack('<L', contentString[4:8])[0] # Gives file size - 8 (in bytes)
+        self.chunkSize     = st.unpack('<L', contentString[4:8])[0] # Gives (file size - 8) (bytes)
         self.format        = contentString[8:12].decode('ascii') # Should read 'WAVE'
         self.subChunk1ID   = contentString[12:16].decode('ascii') # Should be 'fmt '
         self.subChunk1Size = st.unpack('<L', contentString[16:20])[0] # Gives remainder size of the subchunk
@@ -18,6 +18,9 @@ class Header:
         self.byteRate      = st.unpack('<L', contentString[28:32])[0]
         self.blockAlign    = st.unpack('<H', contentString[32:34])[0]
         self.bitsPerSample = st.unpack('<H', contentString[34:36])[0]
+
+        if self.chunkID != 'RIFF' or self.format != 'WAVE' or self.subChunk1ID != 'fmt ' or self.audioFormat != 1 or self.numChannels != 2:
+            self.validFlag = False
 
     def __str__(self):
         return "\
@@ -49,6 +52,10 @@ class Data:
         self.validFlag     = True
         self.subChunk2ID   = dataString[0:4].decode('ascii') # Should read 'data'
         self.subChunk2Size = st.unpack('<L', dataString[4:8])[0]
+
+        if self.subChunk2ID != 'data':
+            self.validFlag = False
+            return
 
         bytesPerSample = bitsPerSample / 8
         self.frames = self.parse_data(int(bytesPerSample), dataString)
@@ -109,10 +116,15 @@ class WaveObject:
 
         self.fileSize = len(fileContent)
         self.header = Header(fileContent)
+
+        if (self.header.validFlag == False):
+            return
+
         dataStart = self.findDataStart(fileContent)
         if dataStart == None:
             self.validFlag = False
             return
+
         self.data = Data(fileContent[dataStart:], self.header.bitsPerSample)
 
     def normalize_data(self, level):
