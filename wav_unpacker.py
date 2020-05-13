@@ -1,12 +1,12 @@
 #############################################################################
 # Module containing bjects to import and parse information from .wav files  #
+# Reason for
 #############################################################################
 
 import struct as st
 
 class Header:
     def __init__(self, contentString):
-        self.validFlag     = True
         self.chunkID       = contentString[0:4].decode('ascii') # Should read 'RIFF'
         self.chunkSize     = st.unpack('<L', contentString[4:8])[0] # Gives (file size - 8) (bytes)
         self.format        = contentString[8:12].decode('ascii') # Should read 'WAVE'
@@ -18,9 +18,6 @@ class Header:
         self.byteRate      = st.unpack('<L', contentString[28:32])[0]
         self.blockAlign    = st.unpack('<H', contentString[32:34])[0]
         self.bitsPerSample = st.unpack('<H', contentString[34:36])[0]
-
-        if self.chunkID != 'RIFF' or self.format != 'WAVE' or self.subChunk1ID != 'fmt ' or self.audioFormat != 1 or self.numChannels != 2:
-            self.validFlag = False
 
     def __str__(self):
         return "\
@@ -49,13 +46,8 @@ class Header:
 
 class Data:
     def __init__(self, dataString, bitsPerSample):
-        self.validFlag     = True
         self.subChunk2ID   = dataString[0:4].decode('ascii') # Should read 'data'
         self.subChunk2Size = st.unpack('<L', dataString[4:8])[0]
-
-        if self.subChunk2ID != 'data':
-            self.validFlag = False
-            return
 
         bytesPerSample = bitsPerSample / 8
         self.frames = self.parse_data(int(bytesPerSample), dataString)
@@ -84,22 +76,17 @@ class Data:
 
 class WaveObject:
     def __init__(self, filename, normalize=False, normLevel=None, compress=False, compLevel=None):
-        self.validFlag = True
         self.filename = filename
         self.header   = None
         self.data     = None
         self.fileSize = None
         self.parse_file()
 
-        if self.data.validFlag == False or self.header.validFlag == False:
-            self.validFlag = False
+        if compress: # compress first to make sure correct normLevel is applied on compressed data
+            self.compress_data(compLevel)
 
-        if self.validFlag:
-            if compress: # compress first to make sure correct normLevel is applied on compressed data
-                self.compress_data(compLevel)
-
-            if normalize:
-                self.normalize_data(normLevel)
+        if normalize:
+            self.normalize_data(normLevel)
 
     def findDataStart(self, fileContent): # Find beginning of data chunk in case of malformed header
         start = 36
@@ -117,12 +104,8 @@ class WaveObject:
         self.fileSize = len(fileContent)
         self.header = Header(fileContent)
 
-        if (self.header.validFlag == False):
-            return
-
         dataStart = self.findDataStart(fileContent)
         if dataStart == None:
-            self.validFlag = False
             return
 
         self.data = Data(fileContent[dataStart:], self.header.bitsPerSample)
