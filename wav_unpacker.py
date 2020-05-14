@@ -50,7 +50,8 @@ class Data:
         self.subChunk2Size = st.unpack('<L', dataString[4:8])[0]
 
         bytesPerSample = bitsPerSample / 8
-        self.frames = self.parse_data(int(bytesPerSample), dataString)
+        self.frames = self.parse_data(int(bytesPerSample), dataString) # (leftChannel, rightChannel)
+        self.avg = [(l + r) / 2 for l, r in zip(self.frames[0], self.frames[1])] # Mono data
 
     def __str__(self):
         return "\
@@ -75,15 +76,12 @@ class Data:
         return data
 
 class WaveObject:
-    def __init__(self, filename, normalize=False, normLevel=None, compress=False, compLevel=None):
+    def __init__(self, filename, normalize=False, normLevel=None):
         self.filename = filename
         self.header   = None
         self.data     = None
         self.fileSize = None
         self.parse_file()
-
-        if compress: # compress first to make sure correct normLevel is applied on compressed data
-            self.compress_data(compLevel)
 
         if normalize:
             self.normalize_data(normLevel)
@@ -123,7 +121,3 @@ class WaveObject:
 
             for i in range(len(rightData)):
                 rightData[i] *= multiplier
-
-    def compress_data(self, level):
-        if level is not None:
-            return

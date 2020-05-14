@@ -1,6 +1,6 @@
-############################################################
+#############################################
 # Module to handle wave file data plotting  #
-############################################################
+#############################################
 from scipy.fftpack import fft
 import math
 import matplotlib.pyplot as plt
@@ -8,12 +8,8 @@ from file_manage import *
 
 
 def plot_time_domain(wav_obj):
-    left_data = wav_obj.data.frames[0]
-    right_data = wav_obj.data.frames[1]
-    avg_data = [(l + r) / 2 for l, r in zip(left_data, right_data)]
-
     plt.figure(1)
-    plt.plot(avg_data)
+    plt.plot(wav_obj.data.avg)
     plt.title("Time Domain Analysis")
     plt.xlabel('Frame #')
     plt.ylabel('Amplitude')
@@ -37,7 +33,7 @@ def plot_freq_domain(wav_obj):
     k = range(len(fft_to_plot))
     T = len(fft_to_plot) / wav_obj.header.sampleRate
 
-    freq_x = [val/T for val in k]
+    freq_x = [val/(T * 2) for val in k]
 
     plt.figure(3)
     plt.plot(freq_x, fft_to_plot)
@@ -51,7 +47,7 @@ def plot_freq_domain(wav_obj):
     axes.set_ylim([0, None])
 
 if __name__ == "__main__":
-    plot_freq_domain(wav_obj_4_normalized)
-    plot_time_domain(wav_obj_4_normalized)
+    plot_freq_domain(wav_obj_5_normalized)
+    plot_time_domain(wav_obj_5_normalized)
 
     plt.show()

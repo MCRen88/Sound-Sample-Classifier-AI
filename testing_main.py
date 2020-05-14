@@ -4,7 +4,6 @@
 
 from wav_unpacker import *
 import unit_tests
-import wave
 from file_manage import *
 
 unit_tests.test_header_group(test_group_1)
