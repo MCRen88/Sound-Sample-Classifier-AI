@@ -14,21 +14,14 @@ def plot_time_domain(wav_obj):
 
     plt.figure(1)
     plt.plot(avg_data)
-    plt.title("Average Data Frame Values")
+    plt.title("Time Domain Analysis")
     plt.xlabel('Frame #')
+    plt.ylabel('Amplitude')
+    plt.grid(True, 'both', 'both')
 
+    axes = plt.gca()
+    axes.set_xlim([0, None])
 
-    plt.figure(2)
-    plt.subplot(211)
-    plt.title("Channel Seperated Data Frame Values")
-    plt.plot(left_data)
-    plt.ylabel("Left")
-    plt.subplot(212)
-    plt.plot(right_data)
-    plt.ylabel("Right")
-    plt.xlabel('Frame #')
-
-    plt.show()
 
 def plot_freq_domain(wav_obj):
     # First combine stereo tracks into a mono data
@@ -46,9 +39,19 @@ def plot_freq_domain(wav_obj):
 
     freq_x = [val/T for val in k]
 
-    plt.figure(1)
+    plt.figure(3)
     plt.plot(freq_x, fft_to_plot)
-    plt.show()
+    plt.title("Fast Fourier Transform Analysis")
+    plt.ylabel("Amplitude")
+    plt.xlabel("Frequency (Hz)")
+    plt.grid(True, 'both', 'both')
+
+    axes = plt.gca()
+    axes.set_xlim([0, None])
+    axes.set_ylim([0, None])
 
 if __name__ == "__main__":
-    plot_freq_domain(wav_obj_4)
+    plot_freq_domain(wav_obj_4_normalized)
+    plot_time_domain(wav_obj_4_normalized)
+
+    plt.show()
