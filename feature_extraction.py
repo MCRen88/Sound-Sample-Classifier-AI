@@ -2,17 +2,17 @@
 # Module to calculate features from         #
 # audio objects                             #
 #############################################
-from file_manage import *
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+from read_wave import *
+from file_manage import *
 
 class FeatureObj:
-    def __init__(self, wavObj):
-        self.wavObj = wavObj
-        self.filename = wavObj.filename[10:len(wavObj.filename)-4]
-        self.sampleRate = wavObj.header.sampleRate
-        self.signal = wavObj.data.avg
+    def __init__(self, signal, sampleRate, filename):
+        self.filename = filename[10:len(filename)-4]
+        self.sampleRate = sampleRate
+        self.signal = signal
         self.duration = len(self.signal) / self.sampleRate
 
         # Features:
@@ -23,7 +23,7 @@ class FeatureObj:
 
     def calcZeroCrossingrate(self):
         # Formula from : https://en.wikipedia.org/wiki/Zero-crossing_rate
-        data = self.wavObj.data.avg
+        data = self.signal
         T = len(data)
         numCrossings = 0
 
@@ -43,7 +43,10 @@ class FeatureObj:
         frame_length = 0.02
         frame_offset = 0.01
 
-        
+        pointsToRead = math.floor(self.sampleRate * frame_length)
+        pointsOffset =  math.floor(self.sampleRate * frame_offset)
+
+        fft_frames = []
         return
 
     def calcMFCC(self):
@@ -95,12 +98,18 @@ def plotFeatures(featureObjs):
         ax[1, i].set_facecolor('#e0e0e0')
 
 
+data1, sr1 = read_wave(test_file_1)
+data2, sr2 = read_wave(test_file_2)
+data3, sr3 = read_wave(test_file_3)
+data4, sr4 = read_wave(test_file_4)
+data5, sr5 = read_wave(test_file_5)
 
-f1 = FeatureObj(wav_obj_1_normalized)
-f2 = FeatureObj(wav_obj_2_normalized)
-f3 = FeatureObj(wav_obj_3_normalized)
-f4 = FeatureObj(wav_obj_4_normalized)
-f5 = FeatureObj(wav_obj_5_normalized)
+
+f1 = FeatureObj(data1, sr1, test_file_1)
+f2 = FeatureObj(data2, sr2, test_file_2)
+f3 = FeatureObj(data3, sr3, test_file_3)
+f4 = FeatureObj(data4, sr4, test_file_4)
+f5 = FeatureObj(data5, sr5, test_file_5)
 
 plotFeatures([f1, f2, f3, f4, f5])
 plt.show()

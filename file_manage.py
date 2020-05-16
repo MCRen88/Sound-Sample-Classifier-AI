@@ -28,8 +28,8 @@ test_file_5 = config_test_file(TEST_DIR, FILE_5)
 
 #test_group_1 = (wav_obj_1, wav_obj_2, wav_obj_3) # Group of valid wave files for testing
 
-wav_obj_1_normalized = WaveObject(test_file_1, normalize=True, normLevel=1)
-wav_obj_2_normalized = WaveObject(test_file_2, normalize=True, normLevel=1)
-wav_obj_3_normalized = WaveObject(test_file_3, normalize=True, normLevel=1)
-wav_obj_4_normalized = WaveObject(test_file_4, normalize=True, normLevel=1)
-wav_obj_5_normalized = WaveObject(test_file_5, normalize=True, normLevel=1)
+# wav_obj_1_normalized = WaveObject(test_file_1, normalize=True, normLevel=1)
+# wav_obj_2_normalized = WaveObject(test_file_2, normalize=True, normLevel=1)
+# wav_obj_3_normalized = WaveObject(test_file_3, normalize=True, normLevel=1)
+# wav_obj_4_normalized = WaveObject(test_file_4, normalize=True, normLevel=1)
+# wav_obj_5_normalized = WaveObject(test_file_5, normalize=True, normLevel=1)
