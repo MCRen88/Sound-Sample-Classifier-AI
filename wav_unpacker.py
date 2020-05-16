@@ -19,31 +19,6 @@ class Header:
         self.blockAlign    = st.unpack('<H', contentString[32:34])[0]
         self.bitsPerSample = st.unpack('<H', contentString[34:36])[0]
 
-    def __str__(self):
-        return "\
-        Chunk ID : {}\n\
-        Chunk Size : {}\n\
-        Format : {}\n\
-        SubChunk 1 ID : {}\n\
-        SubChunk 1 Size : {}\n\
-        Audio Format : {}\n\
-        Num Channels: {} \n\
-        Sample Rate : {}\n\
-        Byte Rate : {}\n\
-        Block Align : {}\n\
-        Bits Per Sample : {}\n\
-        ".format(self.chunkID, \
-        self.chunkSize, \
-        self.format, \
-        self.subChunk1ID, \
-        self.subChunk1Size, \
-        self.audioFormat, \
-        self.numChannels, \
-        self.sampleRate, \
-        self.byteRate, \
-        self.blockAlign, \
-        self.bitsPerSample)
-
 class Data:
     def __init__(self, dataString, bitsPerSample):
         self.subChunk2ID   = dataString[0:4].decode('ascii') # Should read 'data'
@@ -52,12 +27,6 @@ class Data:
         bytesPerSample = bitsPerSample / 8
         self.frames = self.parse_data(int(bytesPerSample), dataString) # (leftChannel, rightChannel)
         self.avg = [(l + r) / 2 for l, r in zip(self.frames[0], self.frames[1])] # Mono data
-
-    def __str__(self):
-        return "\
-        SubChunck 2 ID : {}\n\
-        SubChunk 2 Size : {}\n\
-        ".format(self.subChunk2ID, self.subChunk2Size)
 
     def parse_data(self, bytesPerSample, dataString):
         def convertBinaryStringToInt(bString): # For little endian format
@@ -72,7 +41,6 @@ class Data:
             data[channel].append(convertBinaryStringToInt(value))
             channel = -~-channel # alternate between channel 1 and 0
             pos += bytesPerSample
-
         return data
 
 class WaveObject:
@@ -112,6 +80,7 @@ class WaveObject:
         if level is not None:
             leftData = self.data.frames[0]
             rightData = self.data.frames[1]
+            avgData = self.data.avg
 
             maxVal = abs(max(max(leftData, key=abs), max(rightData, key=abs), key=abs))
             multiplier = level / maxVal
@@ -121,3 +90,9 @@ class WaveObject:
 
             for i in range(len(rightData)):
                 rightData[i] *= multiplier
+
+            maxVal = abs(max(avgData, key=abs))
+            multiplier = level / maxVal
+
+            for i in range(len(avgData)):
+                avgData[i] *= multiplier
