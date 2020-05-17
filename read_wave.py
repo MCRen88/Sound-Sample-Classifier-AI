@@ -10,7 +10,7 @@ def read_wave(path, normalize=True):
             normalize (bool)  - set true to apply a normalization multiplier across audio frames
                                 so that frame data ranges between [-1, 1]
 
-    Outputs: data (np.array)  - array containing audio data values averaged between the left and right channels
+    Outputs: data (list)  - array containing audio data values averaged between the left and right channels
              sampleRate (int) - 1 / sampleRate gives the time seperation between data values. sampleRate / 2 gives the
                                 nyquist frequency of the discrete signal
     Return values are None, None if:
@@ -52,34 +52,39 @@ def read_wave(path, normalize=True):
             pos += bytesPerSample
             data.append((leftData + rightData) / 2)
 
-        return np.array(data)
+        return data
     ''' HELPER FUNCTIONS END'''
 
     try:
         with open(path, mode='rb') as file:
             fileContent = file.read()
     except:
+        print("Cannot open file at: " + path)
         return None, None
 
     chunkID       = fileContent[0:4].decode('ascii') # Should read 'RIFF'
     format        = fileContent[8:12].decode('ascii') # Should read 'WAVE'
     subChunk1ID   = fileContent[12:16].decode('ascii') # Should be 'fmt '
-    audioFormat   = st.unpack('<H', fileContent[20:22])[0] # 1 for PCM, NOTE: only handle these for now
+    audioFormat   = st.unpack('<H', fileContent[20:22])[0] # 1 for PCM, NOTE: only handle this for now
     numChannels   = st.unpack('<H', fileContent[22:24])[0] # 2 for stereo, 1 for mono, if it is mono then left and right channel
                                                            # data are duplicated in each sample frame
     sampleRate    = st.unpack('<L', fileContent[24:28])[0]
 
     bitsPerSample = st.unpack('<H', fileContent[34:36])[0]
 
-    if chunkID != 'RIFF' or format != 'WAVE' or subChunk1ID != 'fmt ' or audioFormat != 1 or (audioFormat != 1 and audioFormat != 2):
+    if chunkID != 'RIFF' or format != 'WAVE' or subChunk1ID != 'fmt ' or audioFormat != 1 or (numChannels != 1 and numChannels != 2):
+        print("File format issues at: " + path)
+        print("Make sure file is not compressed")
         return None, None
 
     dataStart = _findDataStart(fileContent)
     if dataStart == None:
+        print("File data could not be retrived at: " + path)
         return None, None
 
     bytesPerSample = bitsPerSample / 8
     if bytesPerSample.is_integer() == False:
+        print("Imcompatiable bytes per sample at: " + path)
         return None, None
 
     data = _extractData(fileContent[dataStart:], int(bytesPerSample))
@@ -88,3 +93,33 @@ def read_wave(path, normalize=True):
         data = _normalizeData(data)
 
     return data, sampleRate
+
+
+def trimData(signal, threshold):
+    '''
+    Function filter out empty noise in a data according to a threshold input
+    Inputs: signal (list)          - raw signal
+            threshold (float)      - value at which data begins to be trimmed
+
+    Outputs: trimmedSignal (list ) - array containing audio data values averaged between the left and right channels
+    '''
+
+    windowSize = 50
+    toTrim = [] # list of indeces to trim out of the signal
+
+    absSignal = [abs(x) for x in signal]
+
+    for i in range(len(absSignal)-windowSize):
+        avg = sum(absSignal[i:i+windowSize]) / windowSize
+        if avg < threshold:
+            toTrim.append(i)
+
+    for i in range(len(absSignal)-windowSize, len(absSignal)):
+        avg = sum(absSignal[i:]) / len(signal[i:])
+        if avg < threshold:
+            toTrim.append(i)
+
+    for idx in sorted(toTrim, reverse=True):
+        del signal[idx]
+
+    return signal

@@ -16,10 +16,10 @@ class FeatureObj:
         self.duration = len(self.signal) / self.sampleRate
 
         # Features:
-        self.zeroCrossingRate = self.calcZeroCrossingrate()
-        self.fft = self.calcFFT()
-        self.filterBanks = self.calcFilterBanks()
-        self.mfcc = self.calcMFCC()
+        self.zeroCrossingRate = self.calcZeroCrossingrate() # float
+        self.fft = self.calcFFT(self.signal)                # (response_y, frequency_x)
+        self.filterBanks = self.calcFilterBanks()           #
+        self.mfcc = self.calcMFCC()                         #
 
     def calcZeroCrossingrate(self):
         # Formula from : https://en.wikipedia.org/wiki/Zero-crossing_rate
@@ -33,21 +33,101 @@ class FeatureObj:
 
         return numCrossings / T
 
-    def calcFFT(self):
-        freq = np.fft.rfftfreq(len(self.signal), d=1/self.sampleRate)
-        full_fft = np.fft.rfft(self.signal)
+    def mel(self, f):
+        return 2595 * math.log(1 + f / 700, 10)
+
+    def imel(self, m):
+        return 700 * (10**(m/2595) - 1)
+
+    def applyFilter(self, filter, frame):
+        lb = filter[0]
+        m = filter[1]
+        ub = filter[2]
+
+        values = frame[0]
+        freqs = frame[1]
+
+        total = 0
+
+        for i in range(len(freqs)):
+            if freqs[i] < lb:
+                total += 0
+            elif freqs[i] > lb and freqs[i] <= m:
+                slope = 1 / (m - lb)
+                scale = slope * (freqs[i] - lb)
+                total += scale * values[i]
+            elif freqs[i] > m and freqs[i] < ub:
+                slope = 1 / (m - ub)
+                scale = slope * (freqs[i] - ub)
+                total += scale * values[i]
+            else:
+                total += 0
+        return total
+
+    def calcFFT(self, signal):
+        freq = np.fft.rfftfreq(len(signal), d=1/self.sampleRate)
+        full_fft = np.fft.rfft(signal)
         response = abs(full_fft / len(full_fft)) # normalize (can also try len(full_fft) or max(abs(full_fft)))
         return (response, freq)
 
     def calcFilterBanks(self):
-        frame_length = 0.02
-        frame_offset = 0.01
+        ''' SAMPLING FRAMES '''
+        frame_length = 0.02 # in seconds
+        frame_offset = 0.005
 
-        pointsToRead = math.floor(self.sampleRate * frame_length)
-        pointsOffset =  math.floor(self.sampleRate * frame_offset)
+        samplesPerFrame = math.ceil(self.sampleRate * frame_length)
+        offsetPerFrame =  math.ceil(self.sampleRate * frame_offset)
 
-        fft_frames = []
-        return
+        frames = [] # contains segments of audio data
+        lb = 0
+        ub = lb + samplesPerFrame
+        while True:
+            if lb > len(self.signal):
+                break
+
+            if ub < len(self.signal):
+                frames.append(self.signal[lb:ub])
+
+            else:
+                remainder = self.signal[lb:]
+                padding = [0] * (samplesPerFrame - len(remainder))
+                remainder.extend(padding)
+                frames.append(remainder)
+
+            lb += offsetPerFrame
+            ub = lb + samplesPerFrame
+
+        ''' CALCULATE SHORT TIME FFT '''
+        fft_frames = [] # FFT over all segments
+
+        for frame in frames:
+            fft_frames.append(self.calcFFT(frame))
+
+        ''' GENERATE TRIANGULAR FILTERS '''
+        lowFreq = 300
+        hiFreq = 10500
+        numFilters = 26
+
+        lowMel = self.mel(lowFreq)
+        hiMel = self.mel(hiFreq)
+
+        melSpacing = (hiMel - lowMel) / (numFilters + 1)
+        melFilterDivisions = [lowMel + x * melSpacing for x in range(numFilters + 2)]
+        freqFilterDivisions = [math.floor(self.imel(x)) for x in melFilterDivisions]
+
+        filters = [(freqFilterDivisions[i-1], freqFilterDivisions[i],freqFilterDivisions[i+1]) for i in range(1, numFilters + 1)]
+
+        ''' APPLY FILTERS OVER FFT FRAMES '''
+        filterBanks = []
+
+        for frame in fft_frames:
+            filter_values = []
+            for filter in filters:
+                filter_values.append(math.log(self.applyFilter(filter, frame), 10))
+
+            filterBanks.append(filter_values)
+
+        return np.transpose(filterBanks)
 
     def calcMFCC(self):
         '''
@@ -68,6 +148,7 @@ class FeatureObj:
                 g. Take the log of each of the 26 coefficients to get filterbank energies
                 h. Take DCT of each energy to get MFCC (only keep the lower 13)
         '''
+        
         return
 
 
@@ -76,6 +157,7 @@ def plotFeatures(featureObjs):
     numRows = 4 # Time domain, FFT, frequency banks, MFCC
 
     fig, ax = plt.subplots(nrows=numRows, ncols=numCols, sharey=False, figsize=(16, 9))
+
     plt.subplots_adjust(left=0.075, right=.975, top=0.9, bottom=0.05)
     fig.suptitle('Feature Plots')
     for i in range(numCols):
@@ -94,22 +176,63 @@ def plotFeatures(featureObjs):
         ax[0, i].set_facecolor('#e0e0e0')
 
     for i in range(numCols):
+        # Plot FFTs of entire signal
         ax[1, i].plot(featureObjs[i].fft[1], featureObjs[i].fft[0], '#ff7878')
         ax[1, i].set_facecolor('#e0e0e0')
 
+    for i in range(numCols):
+        # Plot Filter Banks
+        ax[2, i].imshow(featureObjs[i].filterBanks, cmap='winter', interpolation='nearest', aspect='auto')
 
-data1, sr1 = read_wave(test_file_1)
-data2, sr2 = read_wave(test_file_2)
-data3, sr3 = read_wave(test_file_3)
-data4, sr4 = read_wave(test_file_4)
-data5, sr5 = read_wave(test_file_5)
+def plotFeature(featureObj):
+    numRows = 4 # Time domain, FFT, frequency banks, MFCC
+
+    fig, ax = plt.subplots(nrows=numRows, ncols=1, sharey=False, figsize=(16, 9))
+
+    plt.subplots_adjust(left=0.075, right=.975, top=0.9, bottom=0.05)
+    fig.suptitle('Feature Plots')
+
+    ax[0].set_title(featureObj.filename)
+
+    ax[0].set_ylabel('Time Domain')
+    ax[1].set_ylabel('FFT')
+    ax[2].set_ylabel('Filter Banks')
+    ax[3].set_ylabel('MFCC')
+
+    # Plot time domain signal
+    frames = range(len(featureObj.signal))
+    time = [frame / featureObj.sampleRate for frame in frames]
+    ax[0].plot(time, featureObj.signal, '#ff7878')
+    ax[0].set_facecolor('#e0e0e0')
 
 
-f1 = FeatureObj(data1, sr1, test_file_1)
-f2 = FeatureObj(data2, sr2, test_file_2)
-f3 = FeatureObj(data3, sr3, test_file_3)
-f4 = FeatureObj(data4, sr4, test_file_4)
-f5 = FeatureObj(data5, sr5, test_file_5)
+    # Plot FFTs of entire signal
+    ax[1].plot(featureObj.fft[1], featureObj.fft[0], '#ff7878')
+    ax[1].set_facecolor('#e0e0e0')
 
-plotFeatures([f1, f2, f3, f4, f5])
-plt.show()
+
+    # Plot Filter Banks
+    ax[2].imshow(featureObj.filterBanks, cmap='winter', interpolation='nearest', extend=[0, 100, 0, 1], aspect='auto')
+
+# data1, sr1 = read_wave(test_file_1)
+# data2, sr2 = read_wave(test_file_2)
+# data3, sr3 = read_wave(test_file_3)
+# data4, sr4 = read_wave(test_file_4)
+# data5, sr5 = read_wave(test_file_5)
+#
+# data1 = trimData(data1, 0.001)
+# data2 = trimData(data2, 0.001)
+# data3 = trimData(data3, 0.001)
+# data4 = trimData(data4, 0.001)
+# data5 = trimData(data5, 0.001)
+#
+# f1 = FeatureObj(data1, sr1, test_file_1)
+# print("Sample 1 done")
+# f2 = FeatureObj(data2, sr2, test_file_2)
+# print("Sample 2 done")
+# f3 = FeatureObj(data3, sr3, test_file_3)
+# print("Sample 3 done")
+# f4 = FeatureObj(data4, sr4, test_file_4)
+# print("Sample 4 done")
+# f5 = FeatureObj(data5, sr5, test_file_5)
+# print("Sample 5 done")
