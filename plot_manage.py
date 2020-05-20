@@ -15,7 +15,7 @@ def plotFeatures(featureObjs):
     ax[0, 0].set_ylabel('Time Domain')
     ax[1, 0].set_ylabel('FFT')
     ax[2, 0].set_ylabel('Filter Banks')
-    ax[3, 0].set_ylabel('MFCC')
+    #ax[3, 0].set_ylabel('MFCC')
 
     for i in range(numCols):
         # Plot time domain signal
@@ -46,12 +46,6 @@ def plot_test_files():
     data4, sr4 = read_wave(test_file_4)
     data5, sr5 = read_wave(test_file_5)
 
-    data1 = trimData(data1, 0.001)
-    data2 = trimData(data2, 0.001)
-    data3 = trimData(data3, 0.001)
-    data4 = trimData(data4, 0.001)
-    data5 = trimData(data5, 0.001)
-
     f1 = FeatureObj(data1, sr1, test_file_1)
     print("Sample 1 done")
     f2 = FeatureObj(data2, sr2, test_file_2)
@@ -72,12 +66,6 @@ def plot_claps():
     clapData4, sr4 = read_wave(clap_file_4)
     clapData5, sr5 = read_wave(clap_file_5)
 
-    clapData1 = trimData(clapData1, 0.0005)
-    clapData2 = trimData(clapData2, 0.0005)
-    clapData3 = trimData(clapData3, 0.0005)
-    clapData4 = trimData(clapData4, 0.0005)
-    clapData5 = trimData(clapData5, 0.0005)
-
     f1 = FeatureObj(clapData1, sr1, clap_file_1)
     f2 = FeatureObj(clapData2, sr2, clap_file_2)
     f3 = FeatureObj(clapData3, sr3, clap_file_3)
@@ -92,12 +80,6 @@ def plot_crashes():
     crashData3, sr3 = read_wave(crash_file_3)
     crashData4, sr4 = read_wave(crash_file_4)
     crashData5, sr5 = read_wave(crash_file_5)
-
-    crashData1 = trimData(crashData1, 0.0005)
-    crashData2 = trimData(crashData2, 0.0005)
-    crashData3 = trimData(crashData3, 0.0005)
-    crashData4 = trimData(crashData4, 0.0005)
-    crashData5 = trimData(crashData5, 0.0005)
 
     f1 = FeatureObj(crashData1, sr1, crash_file_1)
     f2 = FeatureObj(crashData2, sr2, crash_file_2)
@@ -114,12 +96,6 @@ def plot_hihats():
     hihatData4, sr4 = read_wave(hihat_file_4)
     hihatData5, sr5 = read_wave(hihat_file_5)
 
-    hihatData1 = trimData(hihatData1, 0.0005)
-    hihatData2 = trimData(hihatData2, 0.0005)
-    hihatData3 = trimData(hihatData3, 0.0005)
-    hihatData4 = trimData(hihatData4, 0.0005)
-    hihatData5 = trimData(hihatData5, 0.0005)
-
     f1 = FeatureObj(hihatData1, sr1, hihat_file_1)
     f2 = FeatureObj(hihatData2, sr2, hihat_file_2)
     f3 = FeatureObj(hihatData3, sr3, hihat_file_3)
@@ -127,3 +103,6 @@ def plot_hihats():
     f5 = FeatureObj(hihatData5, sr5, hihat_file_5)
 
     plotFeatures([f1, f2, f3, f4, f5])
+
+plot_test_files()
+plt.show()

@@ -17,10 +17,10 @@ class FeatureObj:
         self.duration = len(self.signal) / self.sampleRate
 
         # Features:
-        self.zeroCrossingRate = self.calcZeroCrossingrate() # float
-        self.fft = self.calcFFT(self.signal)                # (response_y, frequency_x)
-        self.filterBanks = self.calcFilterBanks()           #
-        self.mfcc = self.calcMFCC()         #
+        self.zeroCrossingRate = self.calcZeroCrossingrate()
+        self.fft = self.calcFFT(self.signal)
+        self.filterBanks = self.calcFilterBanks()
+        self.mfcc = self.calcMFCC()
 
     def calcZeroCrossingrate(self):
         # Formula from : https://en.wikipedia.org/wiki/Zero-crossing_rate
@@ -74,7 +74,7 @@ class FeatureObj:
     def calcFilterBanks(self):
         ''' SAMPLING FRAMES '''
         frame_length = 0.02 # in seconds
-        frame_offset = 0.005
+        frame_offset = 0.01
 
         samplesPerFrame = math.ceil(self.sampleRate * frame_length)
         offsetPerFrame =  math.ceil(self.sampleRate * frame_offset)
@@ -124,11 +124,40 @@ class FeatureObj:
         for frame in fft_frames:
             filter_values = []
             for filter in filters:
-                filter_values.append(20 * math.log(self.applyFilter(filter, frame), 10))
+                value = self.applyFilter(filter, frame)
+                if value == 0:
+                    filter_values.append(float("inf"))
+                else:
+                    filter_values.append(20 * math.log(value, 10))
+
+            overallMin = min(filter_values)
+            for i in range(len(filter_values)):
+                if filter_values[i] == float("inf"):
+                    filter_values[i] = overallMin
 
             filterBanks.append(filter_values)
 
+
+        if len(filterBanks) < 100:
+            start = len(filterBanks) - 1
+            filterBanks = np.append(filterBanks, [filterBanks[-1]] * (100 - len(filterBanks)), 0)
+
+            endValue = min(filterBanks[-1])
+
+            for i in range(26):
+                startValue = filterBanks[start, i]
+                multiplier = (endValue - startValue) / (100 - start)
+
+                c = 0
+                for j in range(start, 100):
+                    filterBanks[j, i] += c * multiplier
+                    c +=1
+
+        elif len(filterBanks) > 100:
+            filterBanks = filterBanks[:100]
+
         return np.transpose(filterBanks)
+
 
     def calcMFCC(self):
         '''

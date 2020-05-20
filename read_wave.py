@@ -1,14 +1,16 @@
 import struct as st
 import numpy as np
-from file_manage import *
-import matplotlib.pyplot as plt
+import math
 
-def read_wave(path, normalize=True):
+def read_wave(path, normalize=True, length=1, threshold=0.001):
     '''
     Function to parse wave file data.
-    Inputs: path (string)     - full filepath to audio file
-            normalize (bool)  - set true to apply a normalization multiplier across audio frames
-                                so that frame data ranges between [-1, 1]
+    Inputs: path (string)    - full filepath to audio file
+            normalize (bool) - set true to apply a normalization multiplier across audio frames
+                               so that frame data ranges between [-1, 1]
+            length (float)   - chops audio sample to meet this length (seconds). If audio sample is shorter than
+                               length, it will be unchanged
+
 
     Outputs: data (list)  - array containing audio data values averaged between the left and right channels
              sampleRate (int) - 1 / sampleRate gives the time seperation between data values. sampleRate / 2 gives the
@@ -21,6 +23,7 @@ def read_wave(path, normalize=True):
             c. File is stereo
     '''
     ''' HELPER FUNCTIONS START'''
+
     def _findDataStart(fileContent):
         start = 36
         while start < len(fileContent):
@@ -53,7 +56,37 @@ def read_wave(path, normalize=True):
             data.append((leftData + rightData) / 2)
 
         return data
-    ''' HELPER FUNCTIONS END'''
+
+    def _applyLength(signal, sampleRate, duration):
+        numFramesDesired = math.floor(sampleRate * duration)
+        currNumFrames = len(signal)
+
+        if currNumFrames > numFramesDesired:
+            signal = signal[:numFramesDesired]
+
+        return signal
+
+    def _trimData(signal, threshold):
+        windowSize = 100
+        toTrim = [] # list of indeces to trim out of the signal
+
+        absSignal = [abs(x) for x in signal]
+
+        for i in range(len(absSignal)-windowSize):
+            avg = sum(absSignal[i:i+windowSize]) / windowSize
+            if avg < threshold:
+                toTrim.append(i)
+
+        for i in range(len(absSignal)-windowSize, len(absSignal)):
+            avg = sum(absSignal[i:]) / len(signal[i:])
+            if avg < threshold:
+                toTrim.append(i)
+
+        for idx in sorted(toTrim, reverse=True):
+            del signal[idx]
+
+        return signal
+        ''' HELPER FUNCTIONS END'''
 
     try:
         with open(path, mode='rb') as file:
@@ -92,34 +125,10 @@ def read_wave(path, normalize=True):
     if normalize:
         data = _normalizeData(data)
 
+    if threshold is not None:
+        data = _trimData(data, threshold)
+
+    if length is not None:
+        data = _applyLength(data, sampleRate, length)
+
     return data, sampleRate
-
-
-def trimData(signal, threshold):
-    '''
-    Function filter out empty noise in a data according to a threshold input
-    Inputs: signal (list)          - raw signal
-            threshold (float)      - value at which data begins to be trimmed
-
-    Outputs: trimmedSignal (list ) - array containing audio data values averaged between the left and right channels
-    '''
-
-    windowSize = 50
-    toTrim = [] # list of indeces to trim out of the signal
-
-    absSignal = [abs(x) for x in signal]
-
-    for i in range(len(absSignal)-windowSize):
-        avg = sum(absSignal[i:i+windowSize]) / windowSize
-        if avg < threshold:
-            toTrim.append(i)
-
-    for i in range(len(absSignal)-windowSize, len(absSignal)):
-        avg = sum(absSignal[i:]) / len(signal[i:])
-        if avg < threshold:
-            toTrim.append(i)
-
-    for idx in sorted(toTrim, reverse=True):
-        del signal[idx]
-
-    return signal
