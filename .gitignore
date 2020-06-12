@@ -2,3 +2,7 @@ __pycache__/
 test/
 train/
 validation/
+*.png
+*.tex
+good files/
+*.csv

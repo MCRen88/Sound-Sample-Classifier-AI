@@ -3,11 +3,11 @@
 # audio objects                             #
 #############################################
 import numpy as np
-import matplotlib.pyplot as plt
 import math
 from read_wave import *
 from file_manage import *
 from scipy.fftpack import dct
+import random
 
 class FeatureObj:
     def __init__(self, signal, sampleRate, filename):
@@ -73,7 +73,7 @@ class FeatureObj:
 
     def calcFilterBanks(self):
         ''' SAMPLING FRAMES '''
-        frame_length = 0.02 # in seconds
+        frame_length = 0.025 # in seconds
         frame_offset = 0.01
 
         samplesPerFrame = math.ceil(self.sampleRate * frame_length)
@@ -138,23 +138,25 @@ class FeatureObj:
             filterBanks.append(filter_values)
 
 
-        if len(filterBanks) < 100:
+        framesDesired = 75
+
+        if len(filterBanks) < framesDesired:
             start = len(filterBanks) - 1
-            filterBanks = np.append(filterBanks, [filterBanks[-1]] * (100 - len(filterBanks)), 0)
+            filterBanks = np.append(filterBanks, [filterBanks[-1]] * (framesDesired - len(filterBanks)), 0)
 
             endValue = min(filterBanks[-1])
 
             for i in range(26):
                 startValue = filterBanks[start, i]
-                multiplier = (endValue - startValue) / (100 - start)
+                multiplier = (endValue - startValue) / (framesDesired - start)
 
                 c = 0
-                for j in range(start, 100):
-                    filterBanks[j, i] += c * multiplier
+                for j in range(start, framesDesired):
+                    filterBanks[j, i] += c * multiplier + random.uniform(-1, 1)
                     c +=1
 
-        elif len(filterBanks) > 100:
-            filterBanks = filterBanks[:100]
+        elif len(filterBanks) > framesDesired:
+            filterBanks = filterBanks[:framesDesired]
 
         return np.transpose(filterBanks)
 
@@ -179,8 +181,5 @@ class FeatureObj:
                 h. Take DCT of each energy to get MFCC (only keep the lower 13)
         '''
         mfcc = np.transpose(self.filterBanks.copy())
-
-        for i in range(len(mfcc)):
-            mfcc[i] = dct(mfcc[i], type=2, norm='ortho')
-
-        return np.transpose(mfcc)[:13]
+        mfcc = dct(mfcc, type=2, axis=1, norm='ortho')[:,:13]
+        return np.transpose(mfcc)

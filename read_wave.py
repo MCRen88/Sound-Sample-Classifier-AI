@@ -22,8 +22,8 @@ def read_wave(path, normalize=True, length=1, threshold=0.001):
             b. File is uncompressed (PCM = 1)
             c. File is stereo
     '''
-    ''' HELPER FUNCTIONS START'''
 
+    ''' HELPER FUNCTIONS START'''
     def _findDataStart(fileContent):
         start = 36
         while start < len(fileContent):
@@ -86,7 +86,7 @@ def read_wave(path, normalize=True, length=1, threshold=0.001):
             del signal[idx]
 
         return signal
-        ''' HELPER FUNCTIONS END'''
+    ''' HELPER FUNCTIONS END'''
 
     try:
         with open(path, mode='rb') as file:
