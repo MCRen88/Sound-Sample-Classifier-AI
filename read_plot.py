@@ -15,7 +15,6 @@ data = df.loc[0]
 arr = data.to_numpy()[2:]
 
 spec = np.resize(arr, (numFilters, numFrames))
-
 spec = spec.tolist()
 
 fig, ax = plt.subplots(nrows=1, ncols=1)
