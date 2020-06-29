@@ -1,5 +1,5 @@
 '''
-Basic NN, achieves ~ 80% accuracy on test set
+Convolutional Network
 '''
 
 import tensorflow as tf
@@ -13,10 +13,13 @@ numFrames=75
 
 def createModel():
     model = keras.Sequential([
-        keras.layers.Flatten(input_shape=(numFilters, numFrames, 1)),
-        keras.layers.Dense(64, activation='relu'),
+        keras.layers.Conv2D(filters=16, kernel_size=(3, 3), activation='relu', input_shape=(numFilters, numFrames, 1)),
+        keras.layers.MaxPooling2D((2, 2)),
+        keras.layers.Conv2D(filters=32, kernel_size=(3, 3), activation='relu'),
+        keras.layers.MaxPooling2D((2, 2)),
+        keras.layers.Conv2D(filters=32, kernel_size=(3, 3), activation='relu'),
+        keras.layers.Flatten(),
         keras.layers.Dense(32, activation='relu'),
-        keras.layers.Dense(16, activation='relu'),
         keras.layers.Dense(4)
     ])
 
